@@ -46,7 +46,7 @@ class _ChatScreenState extends State<ChatScreen> {
         headers: {
           "Content-Type": "application/json",
           "Authorization":
-              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImMwZmI2Y2Y2MWQyZDVjMDc4NGE2NGFmMzAxMTk4YTdkNzJhMDFhZDkiLCJqaWQiOiJjMGZiNmNmNjFkMmQ1YzA3ODRhNjRhZjMwMTE5OGE3ZDcyYTAxYWQ5QGF5b2JhLm1lIiwiZ3JvdXAiOiJidXNpbmVzcyIsIm1zaXNkbiI6bnVsbCwiaWF0IjoxNzIyMTI1MzgwLCJleHAiOjE3MjIxMjcxODB9.XPl6eEwhP5aq9ZnYF6LDl6u8dJNSm30NEkEj112ifHw",
+              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImMwZmI2Y2Y2MWQyZDVjMDc4NGE2NGFmMzAxMTk4YTdkNzJhMDFhZDkiLCJqaWQiOiJjMGZiNmNmNjFkMmQ1YzA3ODRhNjRhZjMwMTE5OGE3ZDcyYTAxYWQ5QGF5b2JhLm1lIiwiZ3JvdXAiOiJidXNpbmVzcyIsIm1zaXNkbiI6bnVsbCwiaWF0IjoxNzIyMTMwNzAxLCJleHAiOjE3MjIxMzI1MDF9.UIZjO20yxbowuu1NDtJIO4GGZh9--HV5tiaudfh9TzM",
         },
       );
 
@@ -85,7 +85,7 @@ class _ChatScreenState extends State<ChatScreen> {
         Uri.parse(url),
         headers: {
           'Authorization':
-              'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImMwZmI2Y2Y2MWQyZDVjMDc4NGE2NGFmMzAxMTk4YTdkNzJhMDFhZDkiLCJqaWQiOiJjMGZiNmNmNjFkMmQ1YzA3ODRhNjRhZjMwMTE5OGE3ZDcyYTAxYWQ5QGF5b2JhLm1lIiwiZ3JvdXAiOiJidXNpbmVzcyIsIm1zaXNkbiI6bnVsbCwiaWF0IjoxNzIyMTI1MzgwLCJleHAiOjE3MjIxMjcxODB9.XPl6eEwhP5aq9ZnYF6LDl6u8dJNSm30NEkEj112ifHw',
+              'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImMwZmI2Y2Y2MWQyZDVjMDc4NGE2NGFmMzAxMTk4YTdkNzJhMDFhZDkiLCJqaWQiOiJjMGZiNmNmNjFkMmQ1YzA3ODRhNjRhZjMwMTE5OGE3ZDcyYTAxYWQ5QGF5b2JhLm1lIiwiZ3JvdXAiOiJidXNpbmVzcyIsIm1zaXNkbiI6bnVsbCwiaWF0IjoxNzIyMTMwNzAxLCJleHAiOjE3MjIxMzI1MDF9.UIZjO20yxbowuu1NDtJIO4GGZh9--HV5tiaudfh9TzM',
           'Content-Type': 'application/json',
         },
         body: requestBody,
@@ -97,16 +97,42 @@ class _ChatScreenState extends State<ChatScreen> {
 
         print('Image name: $fileName');
 
-        // Upload image to the obtained URL
         for (var slot in slots) {
           final postUrl = slot['postUrl'];
           final getUrl = slot['getUrl'];
+          final key = slot['key'];
+          final contentType = slot['contentType'];
+          final xAmzAlgorithm = slot['xAmzAlgorithm'];
+          final xAmzCredential = slot['xAmzCredential'];
+          final xAmzDate = slot['xAmzDate'];
+          final xAmzSecurityToken = slot['xAmzSecurityToken'];
+          final policy = slot['policy'];
+          final xAmzSignature = slot['xAmzSignature'];
 
           print('Post URL: $postUrl');
           print('Get URL: $getUrl');
+          print('Key: $key');
+          print('Content Type: $contentType');
+          print('xAmzAlgorithm: $xAmzAlgorithm');
+          print('xAmzCredential: $xAmzCredential');
+          print('xAmzDate: $xAmzDate');
+          print('xAmzSecurityToken: $xAmzSecurityToken');
+          print('Policy: $policy');
+          print('xAmzSignature: $xAmzSignature');
 
           // Upload file to the postUrl
-          await _uploadFileToS3(postUrl, image, fileName);
+          await _uploadFileToS3(
+            postUrl,
+            image,
+            key,
+            contentType,
+            xAmzAlgorithm,
+            xAmzCredential,
+            xAmzDate,
+            xAmzSecurityToken,
+            policy,
+            xAmzSignature,
+          );
 
           // Send message with the image URL
           final messagePayload = {
@@ -125,6 +151,7 @@ class _ChatScreenState extends State<ChatScreen> {
         }
       } else {
         print('Failed to get slots: ${response.statusCode}');
+        print('Response body: ${response.body}');
       }
     } catch (error) {
       print('Error: $error');
@@ -132,28 +159,43 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _uploadFileToS3(
-      String postUrl, File image, String fileName) async {
+      String postUrl,
+      File image,
+      String key,
+      String contentType,
+      String xAmzAlgorithm,
+      String xAmzCredential,
+      String xAmzDate,
+      String xAmzSecurityToken,
+      String policy,
+      String xAmzSignature) async {
     try {
       final uri = Uri.parse(postUrl);
-      final key = '$fileName';
 
-      print('uri link: $postUrl');
-      print('uri: $key');
+      print('URI: $uri');
+      print('Key: $key');
 
       // Create a multipart request
-      final request = http.MultipartRequest('POST', Uri.parse(postUrl))
+      final request = http.MultipartRequest('POST', uri)
         ..fields['key'] = key
+        ..fields['Content-Type'] = contentType
+        ..fields['x-amz-algorithm'] = xAmzAlgorithm
+        ..fields['x-amz-credential'] = xAmzCredential
+        ..fields['x-amz-date'] = xAmzDate
+        ..fields['x-amz-security-token'] = xAmzSecurityToken
+        ..fields['policy'] = policy
+        ..fields['x-amz-signature'] = xAmzSignature
         ..files.add(await http.MultipartFile.fromPath(
           'file',
           image.path,
-          filename: fileName,
+          filename: key,
         ));
 
       // Send the request
       final response = await request.send();
 
       // Check the response
-      if (response.statusCode == 201) {
+      if (response.statusCode == 204) {
         print('Image uploaded successfully');
       } else {
         print('Failed to upload image: ${response.statusCode}');
@@ -174,7 +216,7 @@ class _ChatScreenState extends State<ChatScreen> {
         headers: {
           "Content-Type": "application/json",
           "Authorization":
-              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImMwZmI2Y2Y2MWQyZDVjMDc4NGE2NGFmMzAxMTk4YTdkNzJhMDFhZDkiLCJqaWQiOiJjMGZiNmNmNjFkMmQ1YzA3ODRhNjRhZjMwMTE5OGE3ZDcyYTAxYWQ5QGF5b2JhLm1lIiwiZ3JvdXAiOiJidXNpbmVzcyIsIm1zaXNkbiI6bnVsbCwiaWF0IjoxNzIyMTI1MzgwLCJleHAiOjE3MjIxMjcxODB9.XPl6eEwhP5aq9ZnYF6LDl6u8dJNSm30NEkEj112ifHw",
+              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImMwZmI2Y2Y2MWQyZDVjMDc4NGE2NGFmMzAxMTk4YTdkNzJhMDFhZDkiLCJqaWQiOiJjMGZiNmNmNjFkMmQ1YzA3ODRhNjRhZjMwMTE5OGE3ZDcyYTAxYWQ5QGF5b2JhLm1lIiwiZ3JvdXAiOiJidXNpbmVzcyIsIm1zaXNkbiI6bnVsbCwiaWF0IjoxNzIyMTMwNzAxLCJleHAiOjE3MjIxMzI1MDF9.UIZjO20yxbowuu1NDtJIO4GGZh9--HV5tiaudfh9TzM",
         },
         body: json.encode(messagePayload),
       );
@@ -210,7 +252,7 @@ class _ChatScreenState extends State<ChatScreen> {
         headers: {
           "Content-Type": "application/json",
           "Authorization":
-              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImMwZmI2Y2Y2MWQyZDVjMDc4NGE2NGFmMzAxMTk4YTdkNzJhMDFhZDkiLCJqaWQiOiJjMGZiNmNmNjFkMmQ1YzA3ODRhNjRhZjMwMTE5OGE3ZDcyYTAxYWQ5QGF5b2JhLm1lIiwiZ3JvdXAiOiJidXNpbmVzcyIsIm1zaXNkbiI6bnVsbCwiaWF0IjoxNzIyMTI1MzgwLCJleHAiOjE3MjIxMjcxODB9.XPl6eEwhP5aq9ZnYF6LDl6u8dJNSm30NEkEj112ifHw",
+              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImMwZmI2Y2Y2MWQyZDVjMDc4NGE2NGFmMzAxMTk4YTdkNzJhMDFhZDkiLCJqaWQiOiJjMGZiNmNmNjFkMmQ1YzA3ODRhNjRhZjMwMTE5OGE3ZDcyYTAxYWQ5QGF5b2JhLm1lIiwiZ3JvdXAiOiJidXNpbmVzcyIsIm1zaXNkbiI6bnVsbCwiaWF0IjoxNzIyMTMwNzAxLCJleHAiOjE3MjIxMzI1MDF9.UIZjO20yxbowuu1NDtJIO4GGZh9--HV5tiaudfh9TzM",
         },
         body: json.encode(payload),
       );
@@ -343,3 +385,4 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 }
+
